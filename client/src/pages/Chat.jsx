@@ -3,20 +3,17 @@ import { ChatContext } from "../context/ChatContext";
 import { Container, Stack } from "react-bootstrap";
 import UserChat from "../components/chat/UserChat";
 import { AuthContext } from "../context/AuthContext";
-import PotentialChats from "../components/chat/PotentialChats";
 import ChatBox from "../components/chat/ChatBox";
-import { FaBars } from "react-icons/fa";
+import { FaBars } from "react-icons/fa"; // Import the icon
 
 const Chat = () => {
     const { user } = useContext(AuthContext);
     const { userChats, isUserChatsLoading, updateCurrentChat } = useContext(ChatContext);
-    const [showChatList, setShowChatList] = useState(true); // Toggle state
+    const [showChatList, setShowChatList] = useState(true); // Toggle state for chat list
 
     return (
         <Container fluid>
-            <PotentialChats />
-
-            {/* Toggle Button */}
+            {/* Toggle Button for Chat List */}
             <div className="chat-toggle-btn">
                 <FaBars 
                     size={24} 

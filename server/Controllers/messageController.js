@@ -25,4 +25,26 @@ const getMessages = async (req, res) => {
     }
 }
 
-module.exports = { createMessage, getMessages }
+const updateMessage = async (req, res) => {
+    const { messageId } = req.params; 
+    const { text } = req.body; 
+
+    try {
+        const updatedMessage = await messageModel.findByIdAndUpdate(
+            messageId,
+            { text }, 
+            { new: true }
+        );
+
+        if (!updatedMessage) {
+            return res.status(404).json({ message: "Message not found" });
+        }
+
+        res.status(200).json(updatedMessage); 
+    } catch (error) {
+        console.log(error);
+        res.status(500).json(error);
+    }
+};
+
+module.exports = { createMessage, getMessages, updateMessage };

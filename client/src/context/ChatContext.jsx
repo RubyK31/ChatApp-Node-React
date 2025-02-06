@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { createContext, useCallback, useEffect, useState } from "react";
-import { baseUrl, getRequest, postRequest } from "../utils/services";
+import { baseUrl, getRequest, postRequest, putRequest } from "../utils/services";
 import { io } from "socket.io-client";
 
 export const ChatContext = createContext();
@@ -19,7 +19,7 @@ export const ChatContextProvider = ({ children, user }) => {
     const [onlineUsers, setOnlineUsers] = useState([])
     const [notifications, setNotifications] = useState([])
     const [allUsers, setAllUsers] = useState([])
-    const [isTyping, setIsTyping] = useState(false); // New state for typing indicator
+    const [isTyping, setIsTyping] = useState(false);
 
     // console.log("nots", notifications,isTyping)
 
@@ -168,28 +168,44 @@ export const ChatContextProvider = ({ children, user }) => {
         getMessages()
     }, [currentChat]);
 
-   const sendTextMessage = useCallback(async (textMessage, sender, currentChatId, setTextMessage) => {
-        if (!textMessage) return console.log("Please type something first");
+const sendTextMessage = useCallback(async (textMessage, sender, currentChatId, setTextMessage, editId = null) => {
+    if (!textMessage) return console.log("Please type something first");
 
-        // Check if the message is a file URL (based on the presence of "/uploads")
-        const isFileUrl = textMessage.includes("/uploads");
+    // Check if the message is a file URL (based on the presence of "/uploads")
+    const isFileUrl = textMessage.includes("/uploads");
 
-        const messageData = {
-            chatId: currentChatId,
-            senderId: sender._id,
-            text: isFileUrl ? "Sent an attachment" : textMessage, // Set to "Sent an attachment" if it's a file
-            fileUrl: isFileUrl ? textMessage : "undefined", // Send the file URL if it's a file
-        };
-        const response = await postRequest(`${baseUrl}/messages`, JSON.stringify(messageData));
+    const messageData = {
+        chatId: currentChatId,
+        senderId: sender._id,
+        text: isFileUrl ? "Sent an attachment" : textMessage, // Set to "Sent an attachment" if it's a file
+        fileUrl: isFileUrl ? textMessage : "undefined", // Send the file URL if it's a file
+    };
 
-        if (response.error) {
-            return setSendTextMessageError(response);
-        }
+    let response;
+    if (editId) {
+        // If editId is present, update the existing message
+        response = await putRequest(`${baseUrl}/messages/${editId}`, JSON.stringify(messageData)); // Assuming you have a putRequest method
+    } else {
+        // If no editId, create a new message
+        response = await postRequest(`${baseUrl}/messages`, JSON.stringify(messageData));
+    }
 
-        setNewMessage(response);
+    if (response.error) {
+        return setSendTextMessageError(response);
+    }
+
+    // Update messages in state
+    if (editId) {
+        // If editing, update the message in state with the new one
+        setMessages((prev) => prev.map(msg => msg._id === editId ? response : msg));
+    } else {
+        // If new message, add to the list of messages
         setMessages((prev) => [...prev, response]);
-        setTextMessage(""); // Clear the message input after sending
-    }, []);
+    }
+
+    setTextMessage(""); // Clear the message input after sending
+}, []);
+
 
 
     const updateCurrentChat = useCallback((chat) => {
@@ -262,6 +278,7 @@ export const ChatContextProvider = ({ children, user }) => {
                 isMessagesLoading,
                 messagesError,
                 sendTextMessage,
+                setNewMessage,
                 sendTextMessageError,
                 onlineUsers,
                 notifications,
